@@ -1,0 +1,8 @@
+[
+  {"id": "m1", "from": "support@shop.example", "to": "alice@example.com", "subject": "Order 123", "body": "Hi Alice, your order shipped to 221B Baker Street. Call +1-555-0101."},
+  {"id": "m2", "from": "alerts@example.com", "to": "alice@example.com", "subject": "Security notice", "body": "We detected a login from London."},
+  {"id": "m3", "from": "team@example.com", "to": "alice@example.com", "subject": "Project update", "body": "FYI: Bob Johnson bob.johnson@example.com will join the call. His number is +1-555-4242."}
+]
+
+
+

@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+jinja2
+pydantic
+python-multipart
+PyYAML
+rich
+portia-sdk-python[google]
+python-dotenv
+google-api-python-client
+google-auth
+google-auth-oauthlib
+
+

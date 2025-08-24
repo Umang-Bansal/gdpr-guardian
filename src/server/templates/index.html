@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>GDPR Guardian</title>
+    <style>
+      :root { --bg:#0b1020; --fg:#e8ecf3; --muted:#9aa4b2; --card:#141a33; --acc:#6ea8fe; --acc2:#7dffb3; }
+      * { box-sizing: border-box; }
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background: var(--bg); color: var(--fg); }
+      header { padding: 1.25rem 2rem; border-bottom: 1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:space-between; }
+      header h1 { margin:0; font-size: 1.25rem; letter-spacing:.2px; }
+      main { padding: 2rem; max-width: 1000px; margin: 0 auto; }
+      .grid { display:grid; grid-template-columns: 1fr 1fr; gap:1rem; }
+      .card { background: var(--card); border: 1px solid rgba(255,255,255,.08); padding: 1rem; border-radius: 12px; }
+      label { display:block; margin:.5rem 0; color: var(--muted); }
+      input, select, button, textarea { width: 100%; padding: .6rem .7rem; border-radius: 10px; border: 1px solid rgba(255,255,255,.08); background:#0f152b; color: var(--fg); }
+      button { background: linear-gradient(135deg, var(--acc), var(--acc2)); color:#0b0f1a; font-weight:600; border:none; cursor:pointer; }
+      .muted { color: var(--muted); }
+      a { color: var(--acc); text-decoration: none; }
+      .runs a { display:inline-block; margin-top:.5rem; }
+      .kvs { display:grid; grid-template-columns: auto 1fr; gap:.3rem 1rem; font-size:.9rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>GDPR Guardian</h1>
+      <div class="muted">DSAR Orchestrator</div>
+    </header>
+    <main>
+      <div class="grid">
+        <div class="card">
+          <h2 style="margin-top:0">Start a DSAR</h2>
+          <form action="/dsar/new" method="post" enctype="multipart/form-data">
+            <label>Email</label>
+            <input type="email" name="subject_email" placeholder="alice@example.com" required />
+            <label>Request type</label>
+            <select name="request_type">
+              <option value="access">Access</option>
+              <option value="erasure">Erasure</option>
+            </select>
+            <label>Upload Government ID (image)</label>
+            <input type="file" name="id_image" accept="image/*" />
+            <div style="height:.75rem"></div>
+            <button type="submit">Start</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2 style="margin-top:0">System status</h2>
+          <div class="kvs">
+            <div class="muted">Portia SDK</div><div>see <a href="/health" target="_blank">/health</a></div>
+            <div class="muted">Gemini key</div><div>see <a href="/health" target="_blank">/health</a></div>
+            <div class="muted">Gmail</div><div>see <a href="/health" target="_blank">/health</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:1rem"></div>
+      <h2>Recent runs</h2>
+      <div class="runs">
+        {% for r in runs %}
+          <div class="card">
+            <div><strong>ID:</strong> {{ r.request_id }}</div>
+            <div><strong>Subject:</strong> {{ r.subject_email }}</div>
+            <a href="/run/{{ r.request_id }}">Open run</a>
+          </div>
+        {% else %}
+          <p class="muted">No runs yet.</p>
+        {% endfor %}
+      </div>
+    </main>
+  </body>
+  </html>
+
+
+
+

@@ -1,0 +1,24 @@
+identity:
+  min_confidence: 0.85
+  min_confidence_for_auto_approval: 0.85
+legal_hold:
+  block: true
+disclosure:
+  require_sections:
+    - purpose_of_processing
+    - categories_of_data
+    - recipients
+    - retention_period
+    - rights_information
+redaction:
+  required_types: [email, phone, national_id]
+  allow_override_with_justification: true
+sla:
+  access_days: 30
+  erasure_days: 30
+
+retention_policies:
+  financial_transaction_days: 2555
+  active_service_days: 180
+
+

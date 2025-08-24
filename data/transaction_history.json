@@ -1,0 +1,15 @@
+[
+  {
+    "transaction_id": "txn-a9b8c7",
+    "product": "Quantum Widget - Annual Subscription",
+    "amount": 199.99,
+    "date": "2024-09-15T12:00:00Z"
+  },
+  {
+    "transaction_id": "txn-d6e5f4",
+    "product": "Initial Setup Fee",
+    "amount": 50.00,
+    "date": "2020-01-20T11:00:00Z"
+  }
+]
+

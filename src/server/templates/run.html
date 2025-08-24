@@ -1,0 +1,255 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>GDPR Run</title>
+    <style>
+      :root { --bg:#0b1020; --fg:#e8ecf3; --muted:#9aa4b2; --card:#141a33; --acc:#6ea8fe; --acc2:#7dffb3; }
+      * { box-sizing: border-box; }
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background: var(--bg); color: var(--fg); }
+      header { padding: 1.25rem 2rem; border-bottom: 1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:space-between; }
+      header a { color: var(--acc); text-decoration:none; }
+      main { padding: 2rem; max-width: 1100px; margin: 0 auto; }
+      .grid { display:grid; grid-template-columns: 1.1fr .9fr; gap:1rem; }
+      .section { margin: 1rem 0; }
+      .card { background: var(--card); border: 1px solid rgba(255,255,255,.08); padding: 1rem; border-radius: 12px; }
+      .muted { color: var(--muted); }
+      .pill { display: inline-block; padding: .15rem .5rem; border-radius: 999px; background: rgba(255,255,255,.08); margin-right: .3rem; }
+      pre { background: #0f152b; padding: .75rem; overflow: auto; border-radius: 10px; border:1px solid rgba(255,255,255,.08); white-space: pre-wrap; word-wrap: break-word; }
+      code { white-space: pre-wrap; word-wrap: break-word; }
+      .wrap { white-space: normal; word-break: break-word; }
+      label.cb { display: block; margin: 0.25rem 0; }
+      input, select, button, textarea { width: 100%; padding: .6rem .7rem; border-radius: 10px; border: 1px solid rgba(255,255,255,.08); background:#0f152b; color: var(--fg); }
+      button { background: linear-gradient(135deg, var(--acc), var(--acc2)); color:#0b0f1a; font-weight:600; border:none; cursor:pointer; }
+      details { border: 1px solid rgba(255,255,255,.08); border-radius: 8px; }
+      details summary { cursor:pointer; padding:.5rem .75rem; background: rgba(255,255,255,.04); }
+      .split { display:grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+      .row { display:flex; gap:.5rem; align-items:center; }
+      .right { text-align:right; }
+      .small { font-size:.85rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <div class="small muted">Run</div>
+        <h1 style="margin:.2rem 0 0 0">{{ state.request_id }}</h1>
+        <div class="muted">Subject: {{ state.subject_email }}</div>
+      </div>
+      <div><a href="/">← Back</a></div>
+    </header>
+    <main>
+      <nav class="card" style="margin-bottom:1rem; display:flex; gap:1rem; flex-wrap:wrap;">
+        <a href="#summary">Summary</a>
+        <a href="#proposals">Proposals</a>
+        <a href="#legal">Legal</a>
+        <a href="#package">Package</a>
+        <a href="#erasure">Erasure</a>
+        <a href="#audit">Audit</a>
+      </nav>
+      <div class="grid">
+        <div>
+
+          <div class="section" id="summary">
+            <h2>Summary</h2>
+            <div class="card">
+              <div class="split">
+                <div>Artifacts: <strong>{{ state.artifacts|length }}</strong></div>
+                <div>PII findings: <strong>{{ state.pii_findings|length }}</strong></div>
+              </div>
+              <div style="height:.25rem"></div>
+              <div>
+                {% for f in state.pii_findings %}
+                  <span class="pill">{{ f.pii_type }}</span>
+                {% endfor %}
+                {% if state.pii_findings|length == 0 %}
+                  <span class="muted">No PII detected</span>
+                {% endif %}
+              </div>
+              {% if state.approvals and state.approvals.summary_llm %}
+                <div class="section">
+                  <h3>LLM Summary</h3>
+                  <pre>{{ state.approvals.summary_llm }}</pre>
+                </div>
+              {% endif %}
+              <div class="section">
+                <h3>Identity</h3>
+                {% if state.identity %}
+                  <div class="split">
+                    <div>Status: <strong>{{ state.identity.status or 'unknown' }}</strong></div>
+                    <div>Confidence: <strong>{{ '%.2f' % (state.identity.confidence or 0) }}</strong></div>
+                  </div>
+                  {% if state.identity.status != 'verified' %}
+                    <div class="muted small">Process paused pending identity review.</div>
+                  {% endif %}
+                {% else %}
+                  <div class="muted">No identity info.</div>
+                {% endif %}
+              </div>
+              <div class="section">
+                <h3>Legal hold</h3>
+                <form action="/legal/{{ state.request_id }}/toggle" method="post" class="row">
+                  <input type="hidden" name="hold" value="{{ '0' if state.legal and state.legal.hold else '1' }}" />
+                  {% if state.legal and state.legal.hold %}
+                    <div class="muted">Current: ON</div>
+                    <button type="submit">Disable legal hold</button>
+                  {% else %}
+                    <div class="muted">Current: OFF</div>
+                    <button type="submit">Enable legal hold</button>
+                  {% endif %}
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="section" id="proposals">
+            <h2>Redaction proposals</h2>
+            <form action="/approve/{{ state.request_id }}" method="post">
+              <div class="card">
+                <div class="row right small">
+                  <a href="#" onclick="checkAll(true); return false;">Select all</a>
+                  <span class="muted">·</span>
+                  <a href="#" onclick="checkAll(false); return false;">Clear</a>
+                </div>
+                {% for p in state.redaction_proposals %}
+                  <label class="cb" {% if p.third_party %}title="Third-party PII"{% endif %}>
+                    <input type="checkbox" name="proposal" value="{{ p.id }}" checked />
+                    <span class="pill">{{ p.pii_type }}</span>
+                    {% if p.third_party %}
+                      <span class="pill" style="background: rgba(125,255,179,.18); border:1px solid rgba(125,255,179,.35);">third-party</span>
+                    {% endif %}
+                    <span class="muted">{{ p.value }} → <strong>{{ p.masked_preview }}</strong></span>
+                    <span class="muted small">(artifact {{ p.artifact_id }})</span>
+                  </label>
+                {% else %}
+                  <p class="muted">No proposals.</p>
+                {% endfor %}
+              </div>
+
+              <h2>Decision</h2>
+              <label>
+                Decision:
+                <select name="decision">
+                  <option value="approved">Approve</option>
+                  <option value="rejected">Reject</option>
+                </select>
+              </label>
+              <br/>
+              <label>Justification
+                <br/>
+                <textarea name="justification" rows="3" cols="60" placeholder="Why approving/rejecting? Required for overrides."></textarea>
+              </label>
+              <br/>
+              <input type="hidden" name="approval_type" value="compliance" />
+              <button type="submit">Submit</button>
+            </form>
+          </div>
+
+          <div class="section" id="legal">
+            <h2>Legal approval (Erasure)</h2>
+            <form action="/approve/{{ state.request_id }}" method="post">
+              <div class="card">
+                {% if 'erasure' in state.request_types %}
+                  {% if state.approvals and state.approvals.legal_status %}
+                    <div class="wrap">
+                      <strong>Status:</strong>
+                      {% if state.approvals.legal_status.status == 'erasure_executed' %}
+                        Erasure executed ({{ state.approvals.legal_status.deleted }} items)
+                      {% elif state.approvals.legal_status.status == 'blocked' %}
+                        Blocked — {{ state.approvals.legal_status.reason }}
+                      {% else %}
+                        {{ state.approvals.legal_status.status }}
+                      {% endif %}
+                    </div>
+                    <div style="height:.5rem"></div>
+                  {% endif %}
+                  <p class="muted">If this DSAR includes erasure, provide legal decision.</p>
+                {% else %}
+                  <p class="muted">This request is not an erasure. No legal decision needed.</p>
+                {% endif %}
+                <label>
+                  Decision:
+                  <select name="decision">
+                    <option value="approved">Approve erasure</option>
+                    <option value="rejected">Reject erasure</option>
+                  </select>
+                </label>
+                <br/>
+                <label>Notes
+                  <br/>
+                  <textarea name="justification" rows="2" cols="60" placeholder="Reason or exemption (e.g., legal hold)"></textarea>
+                </label>
+              </div>
+              <input type="hidden" name="approval_type" value="legal" />
+              <button type="submit">Submit legal decision</button>
+            </form>
+          </div>
+        </div>
+        <div>
+          <div class="section">
+            <h2>Portia & audit</h2>
+            <div class="card" style="margin-bottom:.5rem">
+              <div class="muted">Portia Run ID</div>
+              <div>
+                <code class="wrap">{{ state.approvals.portia_run_id or '—' }}</code>
+                {% if state.approvals and state.approvals.portia_run_id %}
+                  <div style="height:.35rem"></div>
+                  <a target="_blank" href="https://app.portialabs.ai/dashboard/plan-runs?plan_run_id={{ state.approvals.portia_run_id }}">Open in Portia Cloud</a>
+                {% endif %}
+              </div>
+            </div>
+            <details class="card"><summary>Portia PlanRun</summary>
+              <pre>{{ state.approvals.portia_plan_run_json }}</pre>
+            </details>
+            <details class="card"><summary>Portia Clarification (Compliance)</summary>
+              <pre>{{ state.approvals.portia_compliance_clarification_json }}</pre>
+            </details>
+            <details class="card"><summary>Portia Clarification Decision</summary>
+              <pre>{{ state.approvals.portia_compliance_decision_json }}</pre>
+            </details>
+            <details class="card"><summary>Guardrail Events</summary>
+              <pre>{{ state.approvals.portia_guardrail_event_json }}</pre>
+            </details>
+          </div>
+
+          <div class="section" id="package">
+            <h2>Package</h2>
+            {% if state.delivery and state.delivery.path %}
+              <div class="card">
+                <a href="/download/{{ state.request_id }}">Download disclosure ZIP</a>
+              </div>
+            {% else %}
+              <p class="muted">No package yet. Approve to generate.</p>
+            {% endif %}
+          </div>
+
+          <div class="section" id="erasure">
+            <h2>Erasure results</h2>
+            {% if state.erasure and state.erasure.deleted %}
+              <div class="card">
+                <pre>{{ state.erasure.deleted }}</pre>
+              </div>
+            {% else %}
+              <p class="muted">No erasure performed.</p>
+            {% endif %}
+          </div>
+
+          <div class="section" id="audit">
+            <h2>Audit log</h2>
+            <div class="card">
+              <pre>{{ audit_pretty }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script>
+      function checkAll(on) {
+        document.querySelectorAll('input[name="proposal"]').forEach(el => el.checked = !!on);
+      }
+    </script>
+  </body>
+  </html>
+
+
+
